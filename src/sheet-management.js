@@ -5,14 +5,14 @@ function createTrackerSheets(trackOwned, trackWantToBuy) {
         ['Set Number', 'TEXT', 100],
         ['Condition', 'DROPDOWN', 100],
         ['Status', 'DROPDOWN', 120],
+        ['Purchase Price', 'CURRENCY', 150],
         ['Theme', 'TEXT', 150],
         ['Name', 'TEXT', 250],
         ['Pieces', 'NUMBER', 80],
         ['Date Released', 'DATE', 150],
         ['Date Retired', 'DATE', 150],
-        ['Retail Price', 'CURRENCY', 100],
-        ['Purchase Price', 'CURRENCY', 100],
-        ['Current Value', 'CURRENCY', 100],
+        ['Retail Price', 'CURRENCY', 120],
+        ['Value', 'CURRENCY', 120],
         ['Last Updated', 'DATE', 120],
     ];
 
@@ -63,19 +63,40 @@ function createSheet(spreadsheet, sheetName, columns) {
     headerRange.setFontColor('#ffffff');
     headerRange.setHorizontalAlignment('center');
 
+    // Add instruction row with merged cells
+    // First section: "Enter manually" for columns 1-4
+    const manualRange = sheet.getRange(2, 1, 1, 4);
+    manualRange.merge();
+    manualRange.setValue('Enter manually');
+    manualRange.setFontStyle('italic');
+    manualRange.setFontColor('#666666');
+    manualRange.setBackground('#f9f9f9');
+    manualRange.setHorizontalAlignment('center');
+    manualRange.setFontSize(9);
+
+    // Second section: "Will be fetched" for columns 5-end
+    const fetchedRange = sheet.getRange(2, 5, 1, headers.length - 4);
+    fetchedRange.merge();
+    fetchedRange.setValue('Will be fetched');
+    fetchedRange.setFontStyle('italic');
+    fetchedRange.setFontColor('#666666');
+    fetchedRange.setBackground('#f9f9f9');
+    fetchedRange.setHorizontalAlignment('center');
+    fetchedRange.setFontSize(9);
+
     // Set column widths
     columns.forEach((column, i) => {
         sheet.setColumnWidth(i + 1, column[2]);
     });
 
-    // Freeze header row
-    sheet.setFrozenRows(1);
+    // Freeze header and instruction rows
+    sheet.setFrozenRows(2);
 
     // Add filter to header row
     headerRange.createFilter();
 
-    // Create a table area with initial rows (100 rows for data + 1 header)
-    const tableRange = sheet.getRange(1, 1, 101, headers.length);
+    // Create a table area with initial rows (100 rows for data + 1 header + 1 instruction)
+    const tableRange = sheet.getRange(1, 1, 102, headers.length);
 
     // Add borders to the table
     tableRange.setBorder(
@@ -93,7 +114,7 @@ function createSheet(spreadsheet, sheetName, columns) {
     // Apply column-specific formatting based on type
     columns.forEach((column, index) => {
         const colNum = index + 1;
-        const dataRange = sheet.getRange(2, colNum, 100, 1);
+        const dataRange = sheet.getRange(3, colNum, 100, 1);
 
         switch(column[1]) {
             case 'BOOLEAN':
@@ -132,6 +153,7 @@ function createSheet(spreadsheet, sheetName, columns) {
                 break;
 
             case 'NUMBER':
+                dataRange.setNumberFormat('#,##0');
                 break;
 
             case 'TEXT':
@@ -139,8 +161,8 @@ function createSheet(spreadsheet, sheetName, columns) {
         }
     });
 
-    // Prepopulate first row with example set number
-    sheet.getRange(2, 2).setValue('10305'); // Column 2 is Set Number
+    // Prepopulate first data row with example set number
+    sheet.getRange(3, 1).setValue('10305'); // Row 3, Column 1 is Set Number
 }
 
 function testCreateInventorySheet() {
