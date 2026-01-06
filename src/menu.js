@@ -1,18 +1,15 @@
 function onOpen() {
   SpreadsheetApp.getUi()
-    .createMenu('Brick Sets')
+    .createMenu('Brick Tracker')
     .addItem('Setup', 'setup')
-    .addItem('Fetch Data for Set(s)', 'fetchSelected')
+    .addItem('Fetch Data', 'fetchSelected')
     .addSeparator()
     .addItem('Help', 'help')
     .addToUi();
 }
 
 function setup() {
-  const html = HtmlService.createHtmlOutputFromFile('view/setup-dialog')
-    .setWidth(450)
-    .setHeight(300);
-  SpreadsheetApp.getUi().showModalDialog(html, 'Setup Brick Set Tracking');
+  createTrackerSheet()
 }
 
 function help() {
@@ -36,7 +33,7 @@ function populateRow(sheet, row, setNumber) {
   let data = scrapeBricksetFeaturebox(setNumber);
   if (data.error) return;
   const condition = sheet.getRange(row, 2).getValue()
-  const r = sheet.getRange(row, 4, 1, 7)
+  const r = sheet.getRange(`E${row}:L${row}`)
   const curr = r.getValues()[0]
   const update = [
     data.theme || curr[0],
@@ -51,5 +48,5 @@ function populateRow(sheet, row, setNumber) {
   console.log(`data: ${JSON.stringify(data)}`)
   console.log(`curr: ${curr}`)
   console.log(`upda: ${update}`)
-  sheet.getRange(row, 4, 1, 8).setValues([update]);
+  r.setValues([update]);
 }
