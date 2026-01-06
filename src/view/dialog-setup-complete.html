@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        max-width: 500px;
+        line-height: 1.6;
+      }
+      h2 {
+        margin-top: 0;
+        color: #4CAF50;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .success-icon {
+        font-size: 24px;
+      }
+      .section {
+        margin: 20px 0;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        border-left: 4px solid #4CAF50;
+      }
+      .section h3 {
+        margin-top: 0;
+        color: #333;
+        font-size: 16px;
+      }
+      .steps {
+        margin: 10px 0;
+        padding-left: 0;
+        list-style: none;
+      }
+      .steps li {
+        margin: 8px 0;
+        padding-left: 25px;
+        position: relative;
+      }
+      .steps li:before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: #4CAF50;
+        font-weight: bold;
+      }
+      .example {
+        background-color: #fff4e6;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+        font-family: 'Courier New', monospace;
+      }
+      .button-container {
+        margin-top: 25px;
+        text-align: center;
+      }
+      button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      .highlight {
+        background-color: #fff4e6;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>
+      <span class="success-icon">✓</span>
+      Sheets Created Successfully!
+    </h2>
+
+    <div class="section">
+      <h3>Try it with the example row:</h3>
+      <ul class="steps">
+        <li>We've created the sheet with an example row for you</li>
+        <li>Select the set by clicking <span class="highlight">3</span></li>
+        <li>Go to <span class="highlight">Brick Tracker</span> menu → <span class="highlight">Fetch Data</span></li>
+        <li>Watch the data automatically populate!</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h3>Adding more sets:</h3>
+      <ul class="steps">
+        <li>Enter a set number in the first column</li>
+        <li>Fill in Condition, Status, and Purchase Price (if applicable)</li>
+        <li>Select the row by clicking its row number</li>
+        <li>Click <span class="highlight">Brick Sets → Fetch Data</span></li>
+        <li>The rest of the columns will be filled automatically!</li>
+      </ul>
+    </div>
+
+    <div class="button-container">
+      <button onclick="google.script.host.close()">Got it!</button>
+    </div>
+  </body>
+</html>
