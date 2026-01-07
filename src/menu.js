@@ -1,52 +1,104 @@
+
 function onOpen() {
+  const trackingSheet = getTrackerSheet()
   SpreadsheetApp.getUi()
-    .createMenu('Brick Tracker')
-    .addItem('Setup', 'setup')
-    .addItem('Fetch Data', 'fetchSelected')
-    .addSeparator()
-    .addItem('Help', 'help')
-    .addToUi();
+      .createMenu('Brick Tracker')
+      .addItem(`${trackingSheet == null ? 'Create' : 'Recreate'} Tracking Sheet`, 'setup')
+      .addItem('Add Set to Sheet', 'addSet')
+      .addItem('Fetch Data for Selected', 'fetchSelected')
+      .addSeparator()
+      .addItem('Help', 'help')
+      .addToUi();
+}
+
+function showError(e) {
+  console.error(e)
+  SpreadsheetApp.getActiveSpreadsheet().toast(`Error: ${e}`)
 }
 
 function setup() {
   createTrackerSheet()
 }
 
-function help() {
+function addSet() {
+  const html = HtmlService.createHtmlOutputFromFile('view/dialog-add-set')
+      .setWidth(400)
+      .setHeight(325);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Add Set');
+}
 
+function help() {
+  const html = HtmlService.createHtmlOutputFromFile('view/dialog-help')
+      .setWidth(650)
+      .setHeight(600);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Brick Tracker Help');
 }
 
 function fetchSelected() {
-  const sheet = SpreadsheetApp.getActiveSheet();
-  const selection = sheet.getActiveRange();
-  for (let i = 0; i < selection.getNumRows(); i++) {
-    const row = selection.getRow() + i;
-    const setNumber = sheet.getRange(row, 1).getValue();
-    console.log(`Fetching data for ${setNumber}`)
-    if (setNumber) {
-      populateRow(sheet, row, setNumber);
-    }
+  const trackerSheet = new BrickTrackerSheet(getTrackerSheet())
+  let selectedItems = trackerSheet.selected()
+  if(selectedItems.length === 0) {
+    selectedItems = trackerSheet.all()
   }
+  fetchAndUpdate(selectedItems)
 }
 
-function populateRow(sheet, row, setNumber) {
-  let data = scrapeBricksetFeaturebox(setNumber);
-  if (data.error) return;
-  const condition = sheet.getRange(row, 2).getValue()
-  const r = sheet.getRange(`E${row}:L${row}`)
-  const curr = r.getValues()[0]
-  const update = [
-    data.theme || curr[0],
-    data.title || curr[1],
-    data.pieces || curr[2],
-    data.year || curr[3],
-    data.retired || curr[4],
-    data.retail || curr[5],
-    (condition === 'Used' ? data.used : data.new) || curr[6],
-    new Date(),
-  ]
-  console.log(`data: ${JSON.stringify(data)}`)
-  console.log(`curr: ${curr}`)
-  console.log(`upda: ${update}`)
-  r.setValues([update]);
+function addSetToSheet(setNumber, condition, status, purchasePrice, quantity) {
+  const sheet = getTrackerSheet()
+  if (!sheet) {
+    throw new Error('Tracker sheet not found. Please run Setup first.');
+  }
+
+  const trackerSheet = new BrickTrackerSheet(sheet)
+  const row = trackerSheet.add(
+      setNumber,
+      condition,
+      status,
+      purchasePrice,
+      quantity,
+  )
+
+  // Fetch and populate the rest of the data
+  fetchAndUpdate(trackerSheet.getItems(setNumber))
+
+  return row;
+}
+
+function fetchAndUpdate(items) {
+  const trackerSheet = new BrickTrackerSheet(getTrackerSheet())
+  let errors = []
+  items.forEach((item) => {
+    console.log(`Fetching data for ${item.setNumber}`)
+    let data = null
+    try {
+      data = scrapeBricksetFeaturebox(item.setNumber)
+      if (data.error) {
+        errors.push(item.setNumber)
+        return
+      }
+    } catch (e) {
+      errors.push(item.setNumber)
+      console.error(e)
+      return
+    }
+    console.log(JSON.stringify(data))
+    const update = [
+      data.theme || item.theme,
+      data.title || item.title,
+      data.pieces || item.pieces,
+      data.year || item.dateReleased,
+      data.retired || item.dateRetired,
+      data.retail || item.msrp,
+      (item.condition === 'Open' ? data.used : data.new) || item.value,
+      new Date(),
+    ]
+    trackerSheet.updateItems(item.setNumber, update)
+  })
+  if(errors.length !== 0) {
+    SpreadsheetApp.getActiveSpreadsheet().toast(
+      `Error fetching ${errors.length} set(s): ${errors.join(', ')}`,
+      'Fetch Errors',
+      5
+    )
+  }
 }

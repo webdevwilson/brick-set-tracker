@@ -6,17 +6,36 @@ function createTrackerSheet() {
         ['Condition', 'DROPDOWN', 100],
         ['Status', 'DROPDOWN', 120],
         ['Purchase Price', 'CURRENCY', 120],
+        ['Quantity', 'NUMBER', 80],
         ['Theme', 'TEXT', 150],
-        ['Name', 'TEXT', 250],
+        ['Title', 'TEXT', 250],
         ['Pieces', 'NUMBER', 80],
         ['Released', 'DATE', 100],
         ['Retired', 'DATE', 100],
         ['MSRP', 'CURRENCY', 100],
         ['Value', 'CURRENCY', 100],
-        ['Last Updated', 'DATE', 120],
+        ['Last Updated', 'DATE', 150],
     ];
 
-    createSheet(spreadsheet, 'Brick Tracker - Sets', columns);
+    // Check if sheet already exists
+    let sheet = getTrackerSheet()
+    if (sheet) {
+        try {
+            const ui = SpreadsheetApp.getUi();
+            const response = ui.alert(
+                'Sheet Already Exists',
+                `Brick Tracker sheet already created. Do you want to create a new one?`,
+                ui.ButtonSet.YES_NO
+            )
+            if (response === ui.Button.NO) {
+                return
+            }
+        } catch (e) {
+            console.warn(e);
+        }
+    }
+
+    createSheet(spreadsheet, 'Brick Tracker', columns);
 
     // Show instructions dialog
     try {
@@ -30,27 +49,12 @@ function createTrackerSheet() {
 }
 
 function createSheet(spreadsheet, sheetName, columns) {
-    // Check if sheet already exists
-    let sheet = spreadsheet.getSheetByName(sheetName);
 
-    if (sheet) {
-        // Try to ask user if they want to overwrite (only works when called from UI context)
-        try {
-            const ui = SpreadsheetApp.getUi();
-            const response = ui.alert(
-                'Sheet Already Exists',
-                `A sheet named "${sheetName}" already exists. Do you want to replace it?`,
-                ui.ButtonSet.YES_NO
-            );
-
-            if (response === ui.Button.YES) {
-                spreadsheet.deleteSheet(sheet);
-            } else {
-                return; // Keep existing sheet
-            }
-        } catch (e) {
-            console.warn(e);
-        }
+    // make sure we have a unique name
+    let i = 2, defaultSheetName = sheetName
+    while(spreadsheet.getSheetByName(sheetName)) {
+        sheetName = `${defaultSheetName} ${i}`
+        i += 1
     }
 
     // Create new sheet
@@ -72,26 +76,24 @@ function createSheet(spreadsheet, sheetName, columns) {
     headerRange.setHorizontalAlignment('center');
 
     // Add instruction row with merged cells
-    // First section: "Enter manually" for columns 1-4
-    const manualRange = sheet.getRange(2, 1, 1, 4);
+    const manualRange = sheet.getRange(2, 1, 1, 5);
     manualRange.merge();
-    manualRange.setValue('Enter manually');
+    manualRange.setValue('The values below should be entered manually');
     manualRange.setFontStyle('italic');
     manualRange.setFontColor('#444444');
-    manualRange.setBackground('#ccccce');
+    manualRange.setBackground('#d8ead3');
     manualRange.setHorizontalAlignment('center');
-    manualRange.setFontSize(9);
+    manualRange.setFontSize(10);
     manualRange.setBorder(null, null, null, true, null, null, '#000000', SpreadsheetApp.BorderStyle.SOLID);
 
-    // Second section: "Will be fetched" for columns 5-end
-    const fetchedRange = sheet.getRange(2, 5, 1, headers.length - 4);
+    const fetchedRange = sheet.getRange(2, 6, 1, headers.length - 5);
     fetchedRange.merge();
-    fetchedRange.setValue('Will be fetched');
+    fetchedRange.setValue('The values below can be automatically managed');
     fetchedRange.setFontStyle('italic');
     fetchedRange.setFontColor('#444444');
-    fetchedRange.setBackground('#ccccce');
+    fetchedRange.setBackground('#f5cccd');
     fetchedRange.setHorizontalAlignment('center');
-    fetchedRange.setFontSize(9);
+    fetchedRange.setFontSize(10);
 
     // Set column widths
     columns.forEach((column, i) => {
@@ -167,9 +169,54 @@ function createSheet(spreadsheet, sheetName, columns) {
     });
 
     // Prepopulate first data row with example values
-    sheet.getRange('A3:D3').setValues([['10305', 'Sealed', 'Wishlist', '0']]); // Row 3, Column 1 is Set Number
+    sheet.getRange('A3:E3').setValues([['10305', 'Sealed', 'Wishlist', '0', '1']]);
+
+    // Set tab color to match header theme
+    sheet.setTabColor('#445897');
+
+    // Store the sheet ID in document properties
+    const sheetId = sheet.getSheetId();
+    PropertiesService.getDocumentProperties().setProperty('BRICK_TRACKER_SHEET_ID', sheetId.toString());
+    console.log(`Stored sheet ID: ${sheetId}`);
 }
 
-function testCreateInventorySheet() {
-    createTrackerSheets(true, false);
+function getTrackerSheet() {
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    const sheetId = PropertiesService.getDocumentProperties().getProperty('BRICK_TRACKER_SHEET_ID');
+
+    if (sheetId) {
+        // Try to get sheet by ID
+        const sheets = spreadsheet.getSheets();
+        for (let sheet of sheets) {
+            if (sheet.getSheetId().toString() === sheetId) {
+                return sheet;
+            }
+        }
+    }
+
+    // Sheet not found - prompt user to create it
+    try {
+        const ui = SpreadsheetApp.getUi();
+        const response = ui.alert(
+            'Tracker Sheet Not Found',
+            'The Brick Tracker sheet has not been set up yet. Would you like to create it now?',
+            ui.ButtonSet.YES_NO
+        );
+
+        if (response === ui.Button.YES) {
+            createTrackerSheet();
+            // Retrieve the newly created sheet
+            const newSheetId = PropertiesService.getDocumentProperties().getProperty('BRICK_TRACKER_SHEET_ID');
+            const sheets = spreadsheet.getSheets();
+            for (let sheet of sheets) {
+                if (sheet.getSheetId().toString() === newSheetId) {
+                    return sheet;
+                }
+            }
+        }
+    } catch (e) {
+        showError(e)
+    }
+
+    return null;
 }

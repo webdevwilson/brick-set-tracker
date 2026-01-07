@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        max-width: 400px;
+        line-height: 1.6;
+      }
+      h2 {
+        margin-top: 0;
+        color: #4CAF50;
+        font-size: 18px;
+      }
+      .form-group {
+        margin-bottom: 16px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #333;
+        font-size: 14px;
+      }
+      input, select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+      input:focus, select:focus {
+        outline: none;
+        border-color: #4CAF50;
+      }
+      .required {
+        color: #d32f2f;
+      }
+      .button-container {
+        margin-top: 25px;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+      button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+      }
+      .btn-primary {
+        background-color: #4CAF50;
+        color: white;
+      }
+      .btn-primary:hover {
+        background-color: #45a049;
+      }
+      .btn-primary:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+      .btn-secondary {
+        background-color: #f5f5f5;
+        color: #333;
+        border: 1px solid #ddd;
+      }
+      .btn-secondary:hover {
+        background-color: #e0e0e0;
+      }
+      .note {
+        font-size: 12px;
+        color: #666;
+        font-style: italic;
+        margin-top: 5px;
+      }
+      .success-message {
+        display: none;
+        padding: 12px;
+        background-color: #e8f5e9;
+        border: 1px solid #4CAF50;
+        border-radius: 4px;
+        color: #2e7d32;
+        margin-bottom: 15px;
+      }
+      .optional-fields {
+        display: none;
+        margin-top: 15px;
+      }
+      .optional-fields.expanded {
+        display: block;
+      }
+      .toggle-options {
+        color: #445897;
+        cursor: pointer;
+        font-size: 14px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        margin-top: 10px;
+        font-weight: 500;
+      }
+      .toggle-options:hover {
+        text-decoration: underline;
+      }
+      .toggle-icon {
+        margin-left: 5px;
+        transition: transform 0.2s;
+      }
+      .toggle-icon.expanded {
+        transform: rotate(180deg);
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Add New Set</h2>
+
+    <div id="successMessage" class="success-message"></div>
+
+    <form id="addSetForm">
+      <div class="form-group">
+        <label for="setNumber">Set Number <span class="required">*</span></label>
+        <input type="text" id="setNumber" name="setNumber" required placeholder="e.g., 10305" autofocus>
+        <div class="note">Enter the Brickset set number (without -1 suffix)</div>
+      </div>
+
+      <a class="toggle-options" id="toggleOptions">
+        More options <span class="toggle-icon" id="toggleIcon">▼</span>
+      </a>
+
+      <div class="optional-fields" id="optionalFields">
+        <div class="form-group">
+          <label for="condition">Condition</label>
+          <select id="condition" name="condition">
+            <option value="Sealed" selected>Sealed</option>
+            <option value="Open">Open</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="status">Status</label>
+          <select id="status" name="status">
+            <option value="Wishlist" selected>Wishlist</option>
+            <option value="In Collection">In Collection</option>
+            <option value="Ordered">Ordered</option>
+            <option value="Sold">Sold</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="purchasePrice">Purchase Price</label>
+          <input type="number" id="purchasePrice" name="purchasePrice" step="0.01" min="0" placeholder="0.00">
+          <div class="note">Leave blank if not yet purchased</div>
+        </div>
+
+        <div class="form-group">
+          <label for="quantity">Quantity</label>
+          <input type="number" id="quantity" name="quantity" min="1" value="1">
+        </div>
+      </div>
+
+      <div class="button-container">
+        <button type="button" class="btn-secondary" onclick="google.script.host.close()">Cancel</button>
+        <button type="submit" class="btn-primary" id="submitBtn">Add Set</button>
+      </div>
+    </form>
+
+    <script>
+      // Toggle optional fields
+      document.getElementById('toggleOptions').addEventListener('click', function(e) {
+        e.preventDefault();
+        const optionalFields = document.getElementById('optionalFields');
+        const toggleIcon = document.getElementById('toggleIcon');
+
+        optionalFields.classList.toggle('expanded');
+        toggleIcon.classList.toggle('expanded');
+
+        if (optionalFields.classList.contains('expanded')) {
+          this.innerHTML = 'Less options <span class="toggle-icon expanded" id="toggleIcon">▼</span>';
+        } else {
+          this.innerHTML = 'More options <span class="toggle-icon" id="toggleIcon">▼</span>';
+        }
+      });
+
+      document.getElementById('addSetForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const submitBtn = document.getElementById('submitBtn');
+        const successMsg = document.getElementById('successMessage');
+
+        // Disable submit button
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Adding...';
+
+        // Get form values (use defaults if optional fields not expanded)
+        const setNumber = document.getElementById('setNumber').value.trim();
+        const condition = document.getElementById('condition').value || 'Sealed';
+        const status = document.getElementById('status').value || 'Wishlist';
+        const purchasePrice = document.getElementById('purchasePrice').value || 0;
+        const quantity = document.getElementById('quantity').value || 1;
+
+        // Call the server-side function
+        google.script.run
+          .withSuccessHandler(function(row) {
+            successMsg.style.display = 'block';
+            successMsg.textContent = 'Set added successfully at row ' + row + '! Fetching data...';
+
+            // Close dialog after a short delay
+            setTimeout(function() {
+              google.script.host.close();
+            }, 1500);
+          })
+          .withFailureHandler(function(error) {
+            alert('Error adding set: ' + error.message);
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Add Set';
+          })
+          .addSetToSheet(setNumber, condition, status, parseFloat(purchasePrice), parseInt(quantity));
+      });
+    </script>
+  </body>
+</html>
