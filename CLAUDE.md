@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Google Apps Script project for tracking LEGO brick sets in Google Sheets. It scrapes data from Brickset.com and provides a custom menu interface for managing set collections.
 
+**Language**: TypeScript (transpiled to JavaScript by clasp on deployment)
+
 ## Development Commands
 
 **Deploy to Google Apps Script:**
@@ -28,11 +30,24 @@ Tests are written as standalone functions in `src/tests/`. Execute them directly
 - Uses regex-based HTML parsing to extract dt/dd pairs from the featurebox section
 - `parseDateRange()`: Converts Brickset's date format (e.g., "01 Aug 20 - 31 Dec 24") to MM/DD/YYYY
 
-**menu.js**: Google Sheets UI integration
+**menu.ts**: Google Sheets UI integration (TypeScript)
 - `onOpen()`: Creates custom "Brick Tracker" menu when spreadsheet opens
-- `setup()`: Shows modal dialog for initial configuration
+- `setup()`: Calls sheet creation function
+- `addSet()`: Shows dialog for quickly adding new sets
+- `help()`: Shows help dialog with best practices
 - `fetchSelected()`: Main action that populates data for selected rows
-- `populateRow()`: Updates a single row with scraped data, preserving existing values if fetch fails
+- `addSetToSheet()`: Adds a new row with manual data and fetches details
+- `fetchAndUpdate()`: Fetches Brickset data for multiple items and updates rows
+
+**BrickTrackerSheet.ts**: Sheet data access layer (TypeScript)
+- `RowWrapper`: Type-safe wrapper for row data with getters for each column
+- `BrickTrackerSheet`: Main class for interacting with the tracker sheet
+  - `isValidLegoSetNumber()`: Validates set number format
+  - `add()`: Adds a new set to the sheet and returns the row number
+  - `updateItems()`: Updates fetched data for items matching a set number
+  - `getItems()`: Gets all items with a specific set number
+  - `selected()`: Returns selected rows as RowWrapper objects
+  - `all()`: Returns all valid rows as RowWrapper objects
 
 **sheet-management.js**: Sheet creation and formatting
 - `createTrackerSheets(trackOwned, trackWantToBuy)`: Entry point for setup wizard
@@ -70,7 +85,12 @@ Tests are written as standalone functions in `src/tests/`. Execute them directly
 ## Important Notes
 
 - All source files are in `src/` directory
+- Project uses TypeScript with `@types/google-apps-script` for type safety
+- TypeScript files (`.ts`) are automatically transpiled by clasp on deployment
 - The scraper uses `UrlFetchApp` to make HTTP requests
 - HTML parsing is done with regex (not a proper DOM parser) due to Apps Script limitations
 - The condition value in column B determines whether "New" or "Used" pricing is fetched
 - Existing cell values are preserved if scraping fails or returns null
+- Do not put titles in html when a title is provided by Google Sheets interface (sidebar, dialog, alert, etc...)
+- BrickTrackerSheet.ts class provides typed abstraction for sheet operations with RowWrapper for type-safe data access
+- RowWrapper provides getters for all columns with proper type annotations (string | null, number | null, Date | null)

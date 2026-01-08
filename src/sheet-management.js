@@ -20,32 +20,24 @@ function createTrackerSheet() {
     // Check if sheet already exists
     let sheet = getTrackerSheet()
     if (sheet) {
-        try {
-            const ui = SpreadsheetApp.getUi();
-            const response = ui.alert(
-                'Sheet Already Exists',
-                `Brick Tracker sheet already created. Do you want to create a new one?`,
-                ui.ButtonSet.YES_NO
-            )
-            if (response === ui.Button.NO) {
-                return
-            }
-        } catch (e) {
-            console.warn(e);
+        const recreate = UI.alert(
+            'Sheet Already Exists',
+            'Brick Tracker sheet already created. Do you want to create a new one?',
+            UI.ButtonSet.YES_NO,
+            UI.Button.YES,
+        )
+        if (recreate === true) {
+            return
         }
     }
 
     createSheet(spreadsheet, 'Brick Tracker', columns);
 
     // Show instructions dialog
-    try {
-        const html = HtmlService.createHtmlOutputFromFile('view/dialog-setup-complete')
-            .setWidth(550)
-            .setHeight(450);
-        SpreadsheetApp.getUi().showModalDialog(html, 'Setup Complete');
-    } catch (error) {
-        console.warn('Could not show instructions dialog:', error);
-    }
+    const html = HtmlService.createHtmlOutputFromFile('view/dialog-setup-complete')
+        .setWidth(550)
+        .setHeight(450)
+    UI.modal(html, 'Setup Complete')
 }
 
 function createSheet(spreadsheet, sheetName, columns) {
@@ -62,8 +54,6 @@ function createSheet(spreadsheet, sheetName, columns) {
 
     // Extract headers and widths from columns array
     const headers = columns.map(col => col[0]);
-    const widths = columns.map(col => col[2]);
-    const types = columns.map(col => col[1]);
 
     // Set headers
     const headerRange = sheet.getRange(1, 1, 1, headers.length);
@@ -78,22 +68,27 @@ function createSheet(spreadsheet, sheetName, columns) {
     // Add instruction row with merged cells
     const manualRange = sheet.getRange(2, 1, 1, 5);
     manualRange.merge();
-    manualRange.setValue('The values below should be entered manually');
+    manualRange.setValue('Manual Entry - Enter these values yourself');
     manualRange.setFontStyle('italic');
-    manualRange.setFontColor('#444444');
-    manualRange.setBackground('#d8ead3');
+    manualRange.setFontWeight('bold');
+    manualRange.setFontColor('#1e5631');
+    manualRange.setBackground('#b7e1cd');
     manualRange.setHorizontalAlignment('center');
-    manualRange.setFontSize(10);
-    manualRange.setBorder(null, null, null, true, null, null, '#000000', SpreadsheetApp.BorderStyle.SOLID);
+    manualRange.setVerticalAlignment('middle');
+    manualRange.setFontSize(11);
+    manualRange.setBorder(true, true, true, true, null, null, '#1e5631', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
 
     const fetchedRange = sheet.getRange(2, 6, 1, headers.length - 5);
     fetchedRange.merge();
-    fetchedRange.setValue('The values below can be automatically managed');
+    fetchedRange.setValue('Automagic - These values are managed automatically');
     fetchedRange.setFontStyle('italic');
-    fetchedRange.setFontColor('#444444');
-    fetchedRange.setBackground('#f5cccd');
+    fetchedRange.setFontWeight('bold');
+    fetchedRange.setFontColor('#8b1a1a');
+    fetchedRange.setBackground('#f4c7c3');
     fetchedRange.setHorizontalAlignment('center');
-    fetchedRange.setFontSize(10);
+    fetchedRange.setVerticalAlignment('middle');
+    fetchedRange.setFontSize(11);
+    fetchedRange.setBorder(true, true, true, true, null, null, '#8b1a1a', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
 
     // Set column widths
     columns.forEach((column, i) => {

@@ -34,6 +34,31 @@ class BrickTrackerSheet {
         return regex.test(setNumber)
     }
 
+    get topRow() {
+        // Start at row 3 and search downward
+        let row = 1
+        const maxRows = this._sheet.getLastRow()
+
+        // If sheet is empty (no data rows), return 3
+        if (maxRows < 3) {
+            console.log('Max rows is less than 3')
+            return 3
+        }
+
+        // Search for the first row with a valid set number
+        while (row <= maxRows) {
+            const value = this._sheet.getRange(row, 1).getValue();
+            if (value && this.isValidLegoSetNumber(value)) {
+                console.log(`Top row is ${row}, value: ${value}`)
+                return row
+            }
+            row++;
+        }
+
+        // No valid set numbers found, return 3 (should be first data row)
+        return maxRows
+    }
+
     updateItems(setNumber, updateValues) {
         this.getItems(setNumber)
             .forEach((item) => {
@@ -50,14 +75,14 @@ class BrickTrackerSheet {
     }
 
     add(setNumber, condition, status, purchasePrice, quantity) {
-        // Find the first empty row (skip header row 1 and instruction row 2)
-        let row = 3;
-        while (this._sheet.getRange(row, 1).getValue() !== '') {
-            row++;
-        }
+        // Get the top row (first row with valid data)
+        const topRow = this.topRow;
 
-        // Add the manual entry data
-        this._sheet.getRange(`A${row}:E${row}`).setValues([[
+        // Insert a new row at the top data position
+        this._sheet.insertRowBefore(topRow);
+
+        // Add the manual entry data to the newly inserted row
+        this._sheet.getRange(`A${topRow}:E${topRow}`).setValues([[
             setNumber,
             condition,
             status,
@@ -65,7 +90,7 @@ class BrickTrackerSheet {
             quantity,
         ]])
 
-        return row;
+        return topRow;
     }
 
     selected() {

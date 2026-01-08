@@ -11,11 +11,6 @@ function onOpen() {
       .addToUi();
 }
 
-function showError(e) {
-  console.error(e)
-  SpreadsheetApp.getActiveSpreadsheet().toast(`Error: ${e}`)
-}
-
 function setup() {
   createTrackerSheet()
 }
@@ -24,14 +19,14 @@ function addSet() {
   const html = HtmlService.createHtmlOutputFromFile('view/dialog-add-set')
       .setWidth(400)
       .setHeight(325);
-  SpreadsheetApp.getUi().showModalDialog(html, 'Add Set');
+  UI.modal(html, 'Add Set');
 }
 
 function help() {
   const html = HtmlService.createHtmlOutputFromFile('view/dialog-help')
-      .setWidth(650)
-      .setHeight(600);
-  SpreadsheetApp.getUi().showModalDialog(html, 'Brick Tracker Help');
+      .setWidth(550)
+      .setHeight(550);
+  UI.modal(html, 'Brick Tracker Help');
 }
 
 function fetchSelected() {
@@ -56,6 +51,13 @@ function addSetToSheet(setNumber, condition, status, purchasePrice, quantity) {
       status,
       purchasePrice,
       quantity,
+  )
+
+  // Show toast notification
+  UI.toast(
+    `Set ${setNumber} added at row ${row}. Fetching details...`,
+    'Set Added',
+    3
   )
 
   // Fetch and populate the rest of the data
@@ -95,10 +97,9 @@ function fetchAndUpdate(items) {
     trackerSheet.updateItems(item.setNumber, update)
   })
   if(errors.length !== 0) {
-    SpreadsheetApp.getActiveSpreadsheet().toast(
+    UI.toast(
       `Error fetching ${errors.length} set(s): ${errors.join(', ')}`,
       'Fetch Errors',
-      5
     )
   }
 }
