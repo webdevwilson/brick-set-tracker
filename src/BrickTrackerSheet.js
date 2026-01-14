@@ -3,7 +3,7 @@ class RowWrapper {
         this._rowIdx = rowIndex
         this._d = rowValues
     }
-    get setNumber() { return this._v(0) }
+    get setNumber() { return this._v(0).toString().includes('-') ? this._v(0) : `${this._v(0)}-1` }
     get condition() { return this._v(1) }
     get status() { return this._v(2) }
     get purchasePrice() { return this._v(3) }

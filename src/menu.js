@@ -1,4 +1,3 @@
-
 function onOpen() {
   const trackingSheet = getTrackerSheet()
   SpreadsheetApp.getUi()
@@ -67,22 +66,44 @@ function addSetToSheet(setNumber, condition, status, purchasePrice, quantity) {
 }
 
 function fetchAndUpdate(items) {
+  const scriptProperties = PropertiesService.getScriptProperties()
+  const firestoreLegoCollection = scriptProperties.getProperty('FIRESTORE_LEGO_COLLECTION_SET')
+  const firestoreEndpoint = scriptProperties.getProperty('FIRESTORE_ENDPOINT')
+  const firestore = new Firestore(firestoreEndpoint, ScriptApp.getIdentityToken())
+
   const trackerSheet = new BrickTrackerSheet(getTrackerSheet())
   let errors = []
   items.forEach((item) => {
     console.log(`Fetching data for ${item.setNumber}`)
+
     let data = null
     try {
-      data = scrapeBricksetFeaturebox(item.setNumber)
-      if (data.error) {
+      data = firestore.get(firestoreLegoCollection, item.setNumber)
+    } catch (e) {
+      console.error(e)
+    }
+
+    if(!data) {
+      try {
+        console.log(`Fetching data from Brickset for ${item.setNumber}`)
+        data = scrapeBricksetFeaturebox(item.setNumber)
+        if (data.error) {
+          throw new Error(data.error)
+        }
+        try {
+          firestore.store(firestoreLegoCollection, item.setNumber, data)
+        } catch (e) {
+          console.warn(`Error updating item in firebase: ${e}`)
+        }
+      } catch (e) {
         errors.push(item.setNumber)
+        console.error(e)
         return
       }
-    } catch (e) {
-      errors.push(item.setNumber)
-      console.error(e)
-      return
+    } else {
+      console.log(`Data found in Firestore ${firestoreLegoCollection} for ${item.setNumber}`)
     }
+
     console.log(JSON.stringify(data))
     const update = [
       data.theme || item.theme,

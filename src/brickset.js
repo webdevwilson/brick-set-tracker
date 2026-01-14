@@ -4,8 +4,7 @@
  * @returns {Object} An object containing the scraped key-value pairs
  */
 function scrapeBricksetFeaturebox(id) {
-  // Only append -1 if the set number doesn't already contain a hyphen
-  const setId = id.includes('-') ? id : `${id}-1`;
+  const setId = id.toString().includes('-') ? id : `${id}-1`;
   const url = `https://brickset.com/sets/${setId}`;
   console.log(`Fetching ${url}`)
   try {
