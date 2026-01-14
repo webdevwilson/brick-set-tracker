@@ -64,6 +64,41 @@ function extractBearerToken(req) {
 }
 
 /**
+ * Stores user login information in Firestore
+ * @param {Object} tokenPayload - The validated token payload
+ * @returns {Promise<void>}
+ */
+async function storeUserLogin(tokenPayload) {
+  try {
+    // Extract user identifier (sub) from token
+    const userId = tokenPayload.sub;
+    console.log(`tokenPayload: ${JSON.stringify(tokenPayload)}`)
+
+    if (!userId) {
+      console.warn('Token payload missing sub field');
+      return;
+    }
+
+    // Prepare login data
+    const loginData = {
+      lastLogin: new Date().toISOString(),
+      email: tokenPayload.email || null,
+    };
+
+    console.log(`Storing login for user: ${userId} (${loginData.email})`);
+
+    // Store in Firestore users collection with sub as document ID
+    const userDocRef = firestore.collection('users').doc(userId);
+    await userDocRef.set(loginData, { merge: true });
+
+    console.log(`User login stored successfully: ${userId}`);
+  } catch (error) {
+    console.error('Error storing user login:', error);
+    throw error;
+  }
+}
+
+/**
  * HTTP Cloud Function to store or retrieve LEGO set data from Firestore
  *
  * @param {Object} req - Express request object
@@ -115,14 +150,24 @@ functions.http('fetchLegoSet', async (req, res) => {
     }
 
     // Validate the Google OAuth token
+    let tokenPayload;
     try {
-      await validateGoogleToken(token);
+      tokenPayload = await validateGoogleToken(token);
+      console.log(`Token validated successfully: ${JSON.stringify(tokenPayload)}`);
     } catch (error) {
       res.status(401).json({
         error: 'Unauthorized',
         message: error.message
       });
       return;
+    }
+
+    // Store user login information
+    try {
+      await storeUserLogin(tokenPayload);
+    } catch (error) {
+      // Log error but don't fail the request
+      console.error('Failed to store user login:', error.message);
     }
 
     // Handle based on request method

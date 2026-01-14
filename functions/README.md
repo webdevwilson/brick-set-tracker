@@ -4,6 +4,7 @@ Google Cloud Functions API endpoint for storing and retrieving LEGO set data fro
 
 - **GET**: Retrieve data from Firestore
 - **PUT**: Store data to Firestore
+- **User Tracking**: Automatically tracks user logins in Firestore
 
 ## Setup
 
@@ -195,6 +196,33 @@ curl -X PUT \
   "message": "Invalid or expired token"
 }
 ```
+
+## User Login Tracking
+
+The Cloud Function automatically tracks user logins in Firestore:
+
+- **Collection**: `users`
+- **Document ID**: User's `sub` (subject) from OAuth token - a unique Google user identifier
+- **Fields**:
+  - `lastLogin`: ISO timestamp of the last API request
+  - `email`: User's email address from token (if available)
+  - `name`: User's name from token (if available)
+
+**Example document structure:**
+```json
+{
+  "lastLogin": "2026-01-14T12:00:00.000Z",
+  "email": "user@gmail.com",
+  "name": "John Doe"
+}
+```
+
+**Document path example:**
+```
+users/108234567890123456789
+```
+
+The user login is stored automatically on every authenticated request, regardless of whether it's a GET or PUT operation. If the login tracking fails, it won't affect the main request - it will log an error and continue processing.
 
 ## Local Testing
 
